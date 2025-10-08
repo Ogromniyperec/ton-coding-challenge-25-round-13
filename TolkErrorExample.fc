@@ -1,0 +1,23 @@
+;; 文件名: TolkErrorExample.fc
+;; 说明: 这是一个错误设计的合约，因为每次调用都会往持久存储中添加新的数据，导致 storage 无限制增长。
+
+() recv_internal(cell in_msg_body, slice in_msg) impure {
+    ;; 获取当前存储的 map
+    ;; 如果没有存储，初始化为空 map
+    var data_map = get_data().begin_parse();
+    var dict = data_map~load_dict();
+
+    ;; 获取调用者地址（从 inbound message header）
+    var sender = in_msg~load_msg_addr();
+
+    ;; 将调用者地址转换为哈希键
+    var key = slice_hash(sender);
+
+    ;; 为该调用者存储一些随机数据
+    dict~udict_set_ref(256, key, in_msg_body);
+
+    ;; 将更新后的 dict 写回存储
+    set_data(begin_cell()
+        .store_dict(dict)
+        .end_cell());
+}
